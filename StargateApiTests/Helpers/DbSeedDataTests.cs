@@ -1,13 +1,14 @@
+using StargateAPI.Business.Data;
 using StargateApiTests.Specifications;
 
 namespace StargateApiTests.Helpers;
 
-public class DbSeederTests : UnitTest
+public class DbSeedDataTests : UnitTest
 {
     [Fact]
     public void DataRules_SeedData_PersonUniqueIdByNameField()
     {
-        var duplicates = DbSeeder.GetSeededPeople().GroupBy(
+        var duplicates = DbSeedData.People.GroupBy(
                 person => person.Name,
                 person => person,
                 (name, personGroup) => new

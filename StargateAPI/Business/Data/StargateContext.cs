@@ -19,26 +19,14 @@ namespace StargateAPI.Business.Data
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(StargateContext).Assembly);
 
-            //SeedData(modelBuilder);
-
-            base.OnModelCreating(modelBuilder);
+            SeedData(modelBuilder);
         }
 
         private static void SeedData(ModelBuilder modelBuilder)
         {
-            //add seed data
             modelBuilder.Entity<Person>()
                 .HasData(
-                    new Person
-                    {
-                        Id = 1,
-                        Name = "John Doe"
-                    },
-                    new Person
-                    {
-                        Id = 2,
-                        Name = "Jane Doe"
-                    }
+                    DbSeedData.People
                 );
 
             modelBuilder.Entity<AstronautDetail>()
@@ -50,6 +38,15 @@ namespace StargateAPI.Business.Data
                         CurrentRank = "1LT",
                         CurrentDutyTitle = "Commander",
                         CareerStartDate = DateTime.Now
+                    },
+                    new AstronautDetail
+                    {
+                        Id = 2,
+                        PersonId = 3,
+                        CareerStartDate = new DateTime(1957, 5, 11),
+                        CareerEndDate = null,
+                        CurrentDutyTitle = "Pilot",
+                        CurrentRank = "Senior Lieutenant"
                     }
                 );
 
@@ -62,6 +59,15 @@ namespace StargateAPI.Business.Data
                         DutyStartDate = DateTime.Now,
                         DutyTitle = "Commander",
                         Rank = "1LT"
+                    },
+                    new AstronautDuty
+                    {
+                        Id = 2,
+                        PersonId = 3,
+                        DutyStartDate = new DateTime(1960, 3, 15),
+                        DutyEndDate = null,
+                        DutyTitle = "Pilot",
+                        Rank = "Senior Lieutenant"
                     }
                 );
         }

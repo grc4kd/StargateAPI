@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StargateAPI.Business.Data;
 
@@ -10,9 +11,11 @@ using StargateAPI.Business.Data;
 namespace StargateAPI.Migrations
 {
     [DbContext(typeof(StargateContext))]
-    partial class StargateContextModelSnapshot : ModelSnapshot
+    [Migration("20240710145303_RemoveVirtualPersonFromAstronautDetailsAndAstronautDuties")]
+    partial class RemoveVirtualPersonFromAstronautDetailsAndAstronautDuties
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.7");
@@ -51,7 +54,7 @@ namespace StargateAPI.Migrations
                         new
                         {
                             Id = 1,
-                            CareerStartDate = new DateTime(2024, 7, 10, 10, 55, 23, 862, DateTimeKind.Local).AddTicks(7984),
+                            CareerStartDate = new DateTime(2024, 7, 10, 9, 53, 3, 630, DateTimeKind.Local).AddTicks(6934),
                             CurrentDutyTitle = "Commander",
                             CurrentRank = "1LT",
                             PersonId = 1
@@ -99,7 +102,7 @@ namespace StargateAPI.Migrations
                         new
                         {
                             Id = 1,
-                            DutyStartDate = new DateTime(2024, 7, 10, 10, 55, 23, 862, DateTimeKind.Local).AddTicks(8112),
+                            DutyStartDate = new DateTime(2024, 7, 10, 9, 53, 3, 630, DateTimeKind.Local).AddTicks(7052),
                             DutyTitle = "Commander",
                             PersonId = 1,
                             Rank = "1LT"

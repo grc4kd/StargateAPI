@@ -57,7 +57,7 @@ namespace StargateAPI.Business.Queries
 
     public class GetAstronautDutiesByNameResult : BaseResponse
     {
-        public PersonAstronaut Person { get; set; }
-        public List<AstronautDuty> AstronautDuties { get; set; } = new List<AstronautDuty>();
+        public PersonAstronaut Person { get; set; } = null!;
+        public List<AstronautDuty> AstronautDuties { get; set; } = [];
     }
 }

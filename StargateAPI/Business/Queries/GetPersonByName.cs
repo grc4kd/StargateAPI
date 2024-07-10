@@ -23,9 +23,13 @@ namespace StargateAPI.Business.Queries
         public async Task<GetPersonByNameResult> Handle(GetPersonByName request, CancellationToken cancellationToken)
         {
             var parameters = new { request.Name };
-            var query = $"SELECT a.Id as PersonId, a.Name, b.CurrentRank, b.CurrentDutyTitle, b.CareerStartDate, b.CareerEndDate FROM [Person] a LEFT JOIN [AstronautDetail] b on b.PersonId = a.Id WHERE @Name = a.Name ORDER BY a.Id DESC LIMIT 1";
+            var query = @"SELECT Id as PersonId, Name
+            FROM [Person]
+            WHERE @Name = Name 
+            ORDER BY Id DESC 
+            LIMIT 1";
 
-            var person = await _context.Connection.QueryAsync<PersonAstronaut>(query, parameters);
+            var person = await _context.Connection.QueryAsync<Person>(query, parameters);
 
             if (person.Any())
             {
@@ -47,6 +51,6 @@ namespace StargateAPI.Business.Queries
 
     public class GetPersonByNameResult : BaseResponse
     {
-        public PersonAstronaut? Person { get; set; }
+        public Person? Person { get; set; }
     }
 }

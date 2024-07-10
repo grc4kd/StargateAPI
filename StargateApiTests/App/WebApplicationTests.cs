@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.EntityFrameworkCore;
 using StargateAPI.Business.Commands;
+using StargateAPI.Business.Data;
 using StargateAPI.Business.Queries;
 using StargateApiTests.Fixtures;
 using StargateApiTests.Helpers;
@@ -13,6 +15,8 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
 {
     private readonly StargateWebApplicationFactory _factory = factory;
     private readonly DbSetTestData _dbTestData = dbTestData;
+
+    #region Retrieve a person by name
 
     [Theory]
     [InlineData("/Person")]
@@ -41,7 +45,7 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
     [Fact]
     public async Task Get_PersonByName_ReturnsPerson()
     {
-        var personName = "Roger";
+        var personName = "John Doe";
         var client = _factory.CreateClient();
 
         var response = await client.GetAsync($"/Person/{personName}");
@@ -54,10 +58,14 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
         Assert.Equal(personName, result.Person.Name);
     }
 
+    #endregion
+
+    #region Retrieve all people
+
     [Fact]
     public async Task Get_People_ReturnsGetPeopleResult()
     {
-        IEnumerable<string> expectedNames = DbSeeder.GetSeededPeople().Select(p => p.Name);
+        IEnumerable<string> expectedNames = DbSeedData.People.Select(p => p.Name);
         var client = _factory.CreateClient();
 
         var response = await client.GetAsync("/Person");
@@ -68,9 +76,13 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
         Assert.IsType<GetPeopleResult>(result);
         Assert.All(expectedNames, action: (name) =>
         {
-            var _ = result.People.Any(p => p.Name == name);
+            Assert.Contains(result.People, p => p.Name == name);
         });
     }
+
+    #endregion
+
+    #region Add/update a person by name
 
     [Fact]
     public async Task Post_CreatePerson_TestNewName()
@@ -83,7 +95,8 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
         response.EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var result = await response.Content.ReadFromJsonAsync<CreatePersonResult>();
-        Assert.IsType<CreatePersonResult>(result);
+        Assert.NotNull(result);
+        Assert.True(result.Success);
         Assert.NotEqual(0, result.Id);
     }
 
@@ -97,8 +110,17 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
         var response2 = await client.PostAsync("/Person", JsonContent.Create(person.Name));
 
         response.EnsureSuccessStatusCode();
+        
         Assert.Equal(HttpStatusCode.InternalServerError, response2.StatusCode);
+        var result2 = await response2.Content.ReadFromJsonAsync<CreatePersonResult>();
+        Assert.NotNull(result2);
+        Assert.False(result2.Success);
+        Assert.Equal(0, result2.Id);
     }
+
+    #endregion
+
+    #region Retrieve Astronaut Duty by name
 
     [Fact]
     public async Task Get_AstronautDutiesByName_ReturnsGetAstronautDutiesByNameResult()
@@ -108,7 +130,12 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
 
         var response = await client.GetAsync($"/AstronautDuty/{personName}");
 
+        response.EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<GetAstronautDutiesByNameResult>();
+        Assert.NotNull(result);
+        Assert.True(result.Success);
+        Assert.NotEmpty(result.AstronautDuties);
     }
 
     [Fact]
@@ -120,5 +147,82 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
         var response = await client.GetAsync($"/AstronautDuty/{personName}");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<GetAstronautDutiesByNameResult>();
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Empty(result.AstronautDuties);
     }
+
+    #endregion
+
+    #region Add an Astronaut Duty
+
+    [Fact]
+    public async Task Post_AddAstronautDuty_ReturnsOk()
+    {
+        var request = new CreateAstronautDuty {
+            Name = "Yuri",
+            DutyTitle = "Designer",
+            Rank = "Lieutenant Colonel",
+            DutyStartDate = new DateTime(1962, 6, 12)
+        };
+        
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsync("/AstronautDuty", JsonContent.Create(request));
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<CreateAstronautDutyResult>();
+        Assert.NotNull(result);
+        Assert.True(result.Success);
+        Assert.Equal((int)HttpStatusCode.OK, result.ResponseCode);
+    }
+
+    [Fact]
+    public async Task Post_AddConsecutiveAstronautDuty_UpdatesPriorDutyAssignment()
+    {
+        var personName = "Yuri";
+        var firstDutyStartDate = new DateTime(1962, 6, 12);
+        var secondDutyStartDate = new DateTime(1962, 7, 1);
+
+        var request = new CreateAstronautDuty {
+            Name = personName,
+            DutyTitle = "Designer",
+            Rank = "Lieutenant Colonel",
+            DutyStartDate = firstDutyStartDate
+        };
+
+        var request2 = new CreateAstronautDuty {
+            Name = personName,
+            DutyTitle = "Pilot",
+            Rank = "Lieutenant Colonel",
+            DutyStartDate = secondDutyStartDate
+        };
+
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsync("/AstronautDuty", JsonContent.Create(request));
+        var response2 = await client.PostAsync("/AstronautDuty", JsonContent.Create(request2));
+
+        response.EnsureSuccessStatusCode();
+
+        var result2 = await response2.Content.ReadFromJsonAsync<CreateAstronautDutyResult>();
+        Assert.NotNull(result2);
+        Assert.True(result2.Success);
+        Assert.Equal((int)HttpStatusCode.OK, result2.ResponseCode);
+
+        await using var db = _factory.CreateContext();
+        var astronautDetails = await db.AstronautDetails
+            .OrderByDescending(d => d.Id)
+            .FirstAsync(d => d.Person.Name == personName);
+        var lastTwoAstronautDuties = db.AstronautDuties
+            .Where(d => d.Person.Name == personName)
+            .OrderByDescending(d => d.DutyStartDate)
+            .Take(2);
+
+        Assert.Equal(2, lastTwoAstronautDuties.Count());
+        Assert.Equal(secondDutyStartDate.AddDays(-1), lastTwoAstronautDuties.Last().DutyEndDate);
+    }
+
+    #endregion
 }
