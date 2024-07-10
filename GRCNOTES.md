@@ -26,5 +26,12 @@ benefit the operation at this time.
 3. I know that having a UI is important, and I can use Angular too, but I might need to prioritize work on the 
    API so that I don't end up with an incomplete project here. Is having some of the API done and some of the UI
    done preferrable to having a completed solution?
+4. It looks like were returning InternalServerError for all server errors, even if the requested resource was
+   NotFound. Since this is for a GET request only, is NotFound an okay API HTTP status code to use?
 
-
+# Things I'm skipping due to deadlines
+- I see that migrations have warnings about data being dropped unexpectedly due to a rebuild during
+  seeding operations, however, I'm putting a pin in it for later.
+- I would set up an automation to run code coverage reports but these tools are highly company specific
+  and I'm getting by for now by running the built in coverage tests with XPlat and reportgenerator isntead.
+  

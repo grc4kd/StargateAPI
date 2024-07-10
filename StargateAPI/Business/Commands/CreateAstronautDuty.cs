@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using MediatR;
 using MediatR.Pipeline;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StargateAPI.Business.Data;
 using StargateAPI.Controllers;
@@ -32,7 +33,10 @@ namespace StargateAPI.Business.Commands
         {
             var person = _context.People.AsNoTracking().FirstOrDefault(z => z.Name == request.Name);
 
-            if (person is null) throw new BadHttpRequestException("Bad Request");
+            if (person is null)
+            {
+                return Task.FromResult(new NotFoundObjectResult(request.Name));
+            }
 
             return Task.CompletedTask;
         }
@@ -48,10 +52,9 @@ namespace StargateAPI.Business.Commands
         }
         public async Task<CreateAstronautDutyResult> Handle(CreateAstronautDuty request, CancellationToken cancellationToken)
         {
-            var parameters = new { request.Name };
-            var query = $"SELECT * FROM [Person] WHERE @Name = Name";
-
-            var person = await _context.Connection.QueryFirstOrDefaultAsync<Person>(query, parameters);
+            var person = await _context.People
+                .Include(p => p.AstronautDetail)
+                .FirstOrDefaultAsync(p => p.Name == request.Name, cancellationToken);
 
             if (person == null)
             {
@@ -63,73 +66,47 @@ namespace StargateAPI.Business.Commands
                 };
             }
 
-            query = @"SELECT * FROM [AstronautDetail] WHERE @PersonId = PersonId;";
+            var currentAstronautDuty = await _context.AstronautDuties
+                .Where(p => p.Id == person.Id)
+                .Where(u => u.DutyStartDate <= request.DutyStartDate
+                    && (u.DutyEndDate >= request.DutyStartDate || u.DutyEndDate == null))
+                .SingleOrDefaultAsync(cancellationToken);
 
-            var astronautDetail = await _context.Connection.QueryFirstOrDefaultAsync<AstronautDetail>(query, new { PersonId = person.Id });
+            var requestDutyStartDateOnly = request.DutyStartDate.Date;
 
-            query = @"SELECT * FROM [AstronautDuty] WHERE @PersonId = PersonId 
-                AND ((@DutyStartDate BETWEEN DutyStartDate AND DutyEndDate)
-                    OR DutyEndDate IS NULL)
-            ORDER BY DutyStartDate DESC;";
-
-            var currentAstronautDuty = await _context.Connection.QueryFirstOrDefaultAsync<AstronautDuty>(query, new { PersonId = person.Id, request.DutyStartDate });
-
-            query = @"SELECT * FROM [AstronautDuty] WHERE @PersonId = PersonId
-                ORDER BY DutyStartDate DESC
-                LIMIT 1;";
-
-            var priorAstronautDuty = await _context.Connection.QueryFirstOrDefaultAsync<AstronautDuty>(query, new { PersonId = person.Id });
-            
-            var dutyStartDateOnly = request.DutyStartDate.Date;
-            var priorDutyEndDateOnly = priorAstronautDuty?.DutyEndDate?.Date;
-
-            if (astronautDetail == null && currentAstronautDuty == null)
+            if (person.AstronautDetail == null)
             {
-                astronautDetail = new AstronautDetail
+                person.AstronautDetail = new AstronautDetail()
                 {
-                    PersonId = person.Id,
-                    CurrentDutyTitle = request.DutyTitle,
-                    CurrentRank = request.Rank,
-                    CareerStartDate = dutyStartDateOnly
+                    CareerStartDate = requestDutyStartDateOnly
                 };
-
-                if (request.DutyTitle == "RETIRED")
-                {
-                    astronautDetail.CareerEndDate = dutyStartDateOnly.AddDays(-1);
-                }
-
-                await _context.AstronautDetails.AddAsync(astronautDetail, cancellationToken);
             }
+
+            person.AstronautDetail.CurrentDutyTitle = request.DutyTitle;
+            person.AstronautDetail.CurrentRank = request.Rank;
             
-            if (astronautDetail != null && currentAstronautDuty == null)
-            {
-                astronautDetail.CurrentDutyTitle = request.DutyTitle;
-                astronautDetail.CurrentRank = request.Rank;
-                if (request.DutyTitle == "RETIRED")
-                {
-                    astronautDetail.CareerEndDate = dutyStartDateOnly.AddDays(-1);
-                }
-                _context.AstronautDetails.Update(astronautDetail);
-            }
-
             if (currentAstronautDuty != null)
             {
-                currentAstronautDuty.DutyEndDate = dutyStartDateOnly.AddDays(-1);
-                _context.AstronautDuties.Update(currentAstronautDuty);
+                currentAstronautDuty.DutyEndDate = requestDutyStartDateOnly.AddDays(-1);
             }
 
-            var newAstronautDuty = new AstronautDuty()
+            var newAstronautDuty = new AstronautDuty
+                {
+                    DutyStartDate = requestDutyStartDateOnly,
+                    DutyEndDate = null,
+                    DutyTitle = request.DutyTitle,
+                    Rank = person.AstronautDetail.CurrentRank
+                };
+            
+            person.AstronautDuties.Add(newAstronautDuty);
+            
+            if (request.DutyTitle == "RETIRED")
             {
-                PersonId = person.Id,
-                Rank = request.Rank,
-                DutyTitle = request.DutyTitle,
-                DutyStartDate = dutyStartDateOnly,
-                DutyEndDate = null
-            };
+                person.AstronautDetail.CareerEndDate = requestDutyStartDateOnly.AddDays(-1);
+            }
 
-            await _context.AstronautDuties.AddAsync(newAstronautDuty);
-
-            await _context.SaveChangesAsync();
+            _context.People.Update(person);
+            await _context.SaveChangesAsync(cancellationToken);
 
             return new CreateAstronautDutyResult()
             {

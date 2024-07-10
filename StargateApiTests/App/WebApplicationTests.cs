@@ -5,7 +5,6 @@ using StargateAPI.Business.Commands;
 using StargateAPI.Business.Data;
 using StargateAPI.Business.Queries;
 using StargateApiTests.Fixtures;
-using StargateApiTests.Helpers;
 using StargateApiTests.Specifications;
 
 namespace StargateApiTests.App;
@@ -139,7 +138,7 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
     }
 
     [Fact]
-    public async Task Get_AstronautDutiesByName_NoAstronautDetail_ReturnsError()
+    public async Task Get_AstronautDutiesByName_NoAstronautDetail_ReturnsNotFound()
     {
         var personName = "Roger";
         var client = _factory.CreateClient();
@@ -174,8 +173,76 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<CreateAstronautDutyResult>();
         Assert.NotNull(result);
-        Assert.True(result.Success);
         Assert.Equal((int)HttpStatusCode.OK, result.ResponseCode);
+        Assert.True(result.Success);
+    }
+
+    [Fact]
+    public async Task Post_AddAstronautDutyForMissingPerson_ReturnsNotFound()
+    {
+        var personName = "a person whose name should not exist";
+        var dutyStartDate = new DateTime(1962, 6, 12);
+
+        var request = new CreateAstronautDuty {
+            Name = personName,
+            DutyTitle = "Engineer",
+            Rank = "Private First Class",
+            DutyStartDate = dutyStartDate
+        };
+
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsync("/AstronautDuty", JsonContent.Create(request));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<CreateAstronautDutyResult>();
+        Assert.NotNull(result);
+        Assert.Equal((int)HttpStatusCode.NotFound, result.ResponseCode);
+        Assert.False(result.Success);
+    }
+
+    [Fact]
+    public async Task Post_AddAstronautDutyForNewAstronaut_CreatesNewAstronautDetail()
+    {
+        var request = new CreateAstronautDuty {
+            Name = "James",
+            DutyTitle = "Crew Member",
+            Rank = "Admiral",
+            DutyStartDate = new DateOnly(2021, 10, 13).ToDateTime(new TimeOnly(11, 30))
+        };
+
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/AstronautDuty", request);
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<CreateAstronautDutyResult>();
+        Assert.NotNull(result);
+        Assert.Equal((int)HttpStatusCode.OK, result.ResponseCode);
+        Assert.True(result.Success);
+    }
+
+    [Fact]
+    public async Task Post_AddAstronautDutyForRetirement_UpdatesCareerEndDate()
+    {
+        var request = new CreateAstronautDuty {
+            Name = "Yuri",
+            DutyTitle = "RETIRED",
+            Rank = "Colonel",
+            DutyStartDate = new DateTime(1968, 3, 28)
+        };
+
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/AstronautDuty", request);
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<CreateAstronautDutyResult>();
+        Assert.NotNull(result);
+        Assert.Equal((int)HttpStatusCode.OK, result.ResponseCode);
+        Assert.True(result.Success);
     }
 
     [Fact]

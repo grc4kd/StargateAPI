@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using Dapper;
 using MediatR;
-using Microsoft.AspNetCore.Http.HttpResults;
 using StargateAPI.Business.Data;
 using StargateAPI.Business.Dtos;
 using StargateAPI.Controllers;

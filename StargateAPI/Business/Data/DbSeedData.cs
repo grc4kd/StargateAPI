@@ -23,6 +23,7 @@ public class DbSeedData
             "Mary",
             "Martha",
             "Sierra",
-            "Francine"
+            "Francine",
+            "James"
         }.ToFrozenSet();
 }
