@@ -1,9 +1,6 @@
-using System.Collections.Frozen;
-using System.Collections.Immutable;
 using System.Net;
 using System.Net.Http.Json;
-using StargateAPI.Business.Data;
-using StargateAPI.Business.Dtos;
+using StargateAPI.Business.Commands;
 using StargateAPI.Business.Queries;
 using StargateApiTests.Fixtures;
 using StargateApiTests.Helpers;
@@ -11,9 +8,11 @@ using StargateApiTests.Specifications;
 
 namespace StargateApiTests.App;
 
-public class WebApplicationTests(StargateWebApplicationFactory factory) : IntegrationTest, IClassFixture<StargateWebApplicationFactory>
+public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTestData dbTestData) 
+    : IntegrationTest, IClassFixture<StargateWebApplicationFactory>, IClassFixture<DbSetTestData>
 {
     private readonly StargateWebApplicationFactory _factory = factory;
+    private readonly DbSetTestData _dbTestData = dbTestData;
 
     [Theory]
     [InlineData("/Person")]
@@ -71,5 +70,55 @@ public class WebApplicationTests(StargateWebApplicationFactory factory) : Integr
         {
             var _ = result.People.Any(p => p.Name == name);
         });
+    }
+
+    [Fact]
+    public async Task Post_CreatePerson_TestNewName()
+    {
+        var person = _dbTestData.GetNewPerson();   
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsync("/Person", JsonContent.Create(person.Name));
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<CreatePersonResult>();
+        Assert.IsType<CreatePersonResult>(result);
+        Assert.NotEqual(0, result.Id);
+    }
+
+    [Fact]
+    public async Task Post_CreatePerson_DuplicateNameReturnsError()
+    {
+        var person = _dbTestData.GetNewPerson();
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsync("/Person", JsonContent.Create(person.Name));
+        var response2 = await client.PostAsync("/Person", JsonContent.Create(person.Name));
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.InternalServerError, response2.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_AstronautDutiesByName_ReturnsGetAstronautDutiesByNameResult()
+    {
+        var personName = "Yuri";
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync($"/AstronautDuty/{personName}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_AstronautDutiesByName_NoAstronautDetail_ReturnsError()
+    {
+        var personName = "Roger";
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync($"/AstronautDuty/{personName}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

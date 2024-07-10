@@ -52,14 +52,24 @@ namespace StargateAPI.Business.Commands
         }
         public async Task<CreateAstronautDutyResult> Handle(CreateAstronautDuty request, CancellationToken cancellationToken)
         {
+            var parameters = new { request.Name };
+            var query = $"SELECT * FROM [Person] WHERE @Name = Name";
 
-            var query = $"SELECT * FROM [Person] WHERE \'{request.Name}\' = Name";
+            var person = await _context.Connection.QueryFirstOrDefaultAsync<Person>(query, parameters);
 
-            var person = await _context.Connection.QueryFirstOrDefaultAsync<Person>(query);
+            if (person == null)
+            {
+                return new CreateAstronautDutyResult
+                {
+                    Success = false,
+                    Message = $"{nameof(Person)} was not found by {nameof(Person.Name)} {request.Name}",
+                    ResponseCode = (int)HttpStatusCode.NotFound
+                };
+            }
 
-            query = $"SELECT * FROM [AstronautDetail] WHERE {person.Id} = PersonId";
+            query = $"SELECT * FROM [AstronautDetail] WHERE @PersonId = PersonId";
 
-            var astronautDetail = await _context.Connection.QueryFirstOrDefaultAsync<AstronautDetail>(query);
+            var astronautDetail = await _context.Connection.QueryFirstOrDefaultAsync<AstronautDetail>(query, new { PersonId = person.Id });
 
             if (astronautDetail == null)
             {

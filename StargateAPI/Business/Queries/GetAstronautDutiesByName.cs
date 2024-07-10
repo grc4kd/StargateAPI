@@ -1,5 +1,7 @@
-﻿using Dapper;
+﻿using System.Net;
+using Dapper;
 using MediatR;
+using Microsoft.AspNetCore.Http.HttpResults;
 using StargateAPI.Business.Data;
 using StargateAPI.Business.Dtos;
 using StargateAPI.Controllers;
@@ -22,18 +24,29 @@ namespace StargateAPI.Business.Queries
 
         public async Task<GetAstronautDutiesByNameResult> Handle(GetAstronautDutiesByName request, CancellationToken cancellationToken)
         {
+            var parameters = new { request.Name };
+            var query = @"SELECT a.Id as PersonId, a.Name, b.CurrentRank, b.CurrentDutyTitle, b.CareerStartDate, b.CareerEndDate 
+            FROM [Person] a INNER JOIN [AstronautDetail] b on b.PersonId = a.Id WHERE @Name = a.Name";
 
-            var result = new GetAstronautDutiesByNameResult();
+            var person = await _context.Connection.QueryFirstOrDefaultAsync<PersonAstronaut>(query, parameters);
 
-            var query = $"SELECT a.Id as PersonId, a.Name, b.CurrentRank, b.CurrentDutyTitle, b.CareerStartDate, b.CareerEndDate FROM [Person] a LEFT JOIN [AstronautDetail] b on b.PersonId = a.Id WHERE \'{request.Name}\' = a.Name";
+            if (person == null)
+            {
+                return new GetAstronautDutiesByNameResult
+                {
+                    Success = false,
+                    Message = $"Requested {nameof(PersonAstronaut)} {request.Name} does not have any {nameof(AstronautDetail)} records on file.",
+                    ResponseCode = (int)HttpStatusCode.NotFound
+                };
+            }
 
-            var person = await _context.Connection.QueryFirstOrDefaultAsync<PersonAstronaut>(query);
+            var result = new GetAstronautDutiesByNameResult {
+                Person = person
+            };
 
-            result.Person = person;
+            query = $"SELECT * FROM [AstronautDuty] WHERE @PersonId = PersonId Order By DutyStartDate Desc";
 
-            query = $"SELECT * FROM [AstronautDuty] WHERE {person.PersonId} = PersonId Order By DutyStartDate Desc";
-
-            var duties = await _context.Connection.QueryAsync<AstronautDuty>(query);
+            var duties = await _context.Connection.QueryAsync<AstronautDuty>(query, new { person.PersonId });
 
             result.AstronautDuties = duties.ToList();
 
