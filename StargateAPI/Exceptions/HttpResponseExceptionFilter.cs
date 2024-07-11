@@ -31,21 +31,7 @@ public class HttpResponseExceptionFilter : IActionFilter, IOrderedFilter
 
             if (context.Exception is not HttpResponseException)
             {
-                _logger.LogError(context.Exception, "Exception was thrown in action: {action}", context.ActionDescriptor.DisplayName);
                 context.ExceptionHandled = true;
-            }
-        }
-
-        if (context.Result is ObjectResult objectResult
-            && objectResult.Value is BaseResponse baseResponse)
-        {
-            if (!baseResponse.Success)
-            {
-                _logger.FailedRequest(context.Controller, context.HttpContext.Request.GetDisplayUrl());
-            }
-            if (baseResponse.Success)
-            {
-                _logger.SuccessfulRequest(context.Controller, context.HttpContext.Request.GetDisplayUrl());
             }
         }
 
@@ -58,6 +44,19 @@ public class HttpResponseExceptionFilter : IActionFilter, IOrderedFilter
             };
 
             context.ExceptionHandled = true;
+        }
+
+        if (context.Result is ObjectResult objectResult
+            && objectResult.Value is BaseResponse baseResponse)
+        {
+            if (!baseResponse.Success && !context.ExceptionHandled)
+            {
+                _logger.FailedRequest(context.Controller, context.HttpContext.Request.GetDisplayUrl());
+            }
+            if (baseResponse.Success)
+            {
+                _logger.SuccessfulRequest(context.Controller, context.HttpContext.Request.GetDisplayUrl());
+            }
         }
 
         context.Result ??= new ObjectResult(context.HttpContext.Response)
