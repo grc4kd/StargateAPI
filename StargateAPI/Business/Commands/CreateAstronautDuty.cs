@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StargateAPI.Business.Data;
 using StargateAPI.Controllers;
+using StargateAPI.Exceptions;
 using System.Net;
 
 namespace StargateAPI.Business.Commands
@@ -35,7 +36,13 @@ namespace StargateAPI.Business.Commands
 
             if (person is null)
             {
-                return Task.FromResult(new NotFoundObjectResult(request.Name));
+                throw new HttpResponseException(HttpStatusCode.NotFound, new CreateAstronautDutyResult
+                {
+                    Id = 0,
+                    Message = "Person Not Found",
+                    ResponseCode = (int)HttpStatusCode.NotFound,
+                    Success = false
+                });
             }
 
             return Task.CompletedTask;

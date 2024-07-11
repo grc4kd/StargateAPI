@@ -34,7 +34,7 @@ namespace StargateAPI.Business.Queries
                 return new GetAstronautDutiesByNameResult
                 {
                     Success = false,
-                    Message = $"Requested {nameof(PersonAstronaut)} {request.Name} does not have any {nameof(AstronautDetail)} records on file.",
+                    Message = $"Requested Person: {request.Name} does not have any AstronautDetail records on file.",
                     ResponseCode = (int)HttpStatusCode.NotFound
                 };
             }

@@ -9,7 +9,7 @@ using StargateApiTests.Specifications;
 
 namespace StargateApiTests.App;
 
-public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTestData dbTestData) 
+public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTestData dbTestData)
     : IntegrationTest, IClassFixture<StargateWebApplicationFactory>, IClassFixture<DbSetTestData>
 {
     private readonly StargateWebApplicationFactory _factory = factory;
@@ -33,7 +33,7 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
     [Fact]
     public async Task Get_PersonByMissingName_ReturnsNotFound()
     {
-        var missingName = "not found";
+        var missingName = "slartibartfast";
         var client = _factory.CreateClient();
 
         var response = await client.GetAsync($"/Person/{missingName}");
@@ -86,7 +86,7 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
     [Fact]
     public async Task Post_CreatePerson_TestNewName()
     {
-        var person = _dbTestData.GetNewPerson();   
+        var person = _dbTestData.GetNewPerson();
         var client = _factory.CreateClient();
 
         var response = await client.PostAsync("/Person", JsonContent.Create(person.Name));
@@ -109,7 +109,7 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
         var response2 = await client.PostAsync("/Person", JsonContent.Create(person.Name));
 
         response.EnsureSuccessStatusCode();
-        
+
         Assert.Equal(HttpStatusCode.InternalServerError, response2.StatusCode);
         var result2 = await response2.Content.ReadFromJsonAsync<CreatePersonResult>();
         Assert.NotNull(result2);
@@ -154,18 +154,19 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
 
     #endregion
 
-    #region Add an Astronaut Duty
+    #region Add an Astronaut Duty   
 
     [Fact]
     public async Task Post_AddAstronautDuty_ReturnsOk()
     {
-        var request = new CreateAstronautDuty {
+        var request = new CreateAstronautDuty
+        {
             Name = "Yuri",
             DutyTitle = "Designer",
             Rank = "Lieutenant Colonel",
             DutyStartDate = new DateTime(1962, 6, 12)
         };
-        
+
         var client = _factory.CreateClient();
 
         var response = await client.PostAsync("/AstronautDuty", JsonContent.Create(request));
@@ -180,10 +181,11 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
     [Fact]
     public async Task Post_AddAstronautDutyForMissingPerson_ReturnsNotFound()
     {
-        var personName = "a person whose name should not exist";
+        var personName = "test name, missing person";
         var dutyStartDate = new DateTime(1962, 6, 12);
 
-        var request = new CreateAstronautDuty {
+        var request = new CreateAstronautDuty
+        {
             Name = personName,
             DutyTitle = "Engineer",
             Rank = "Private First Class",
@@ -192,7 +194,7 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
 
         var client = _factory.CreateClient();
 
-        var response = await client.PostAsync("/AstronautDuty", JsonContent.Create(request));
+        var response = await client.PostAsJsonAsync("/AstronautDuty", request);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         var result = await response.Content.ReadFromJsonAsync<CreateAstronautDutyResult>();
@@ -204,7 +206,8 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
     [Fact]
     public async Task Post_AddAstronautDutyForNewAstronaut_CreatesNewAstronautDetail()
     {
-        var request = new CreateAstronautDuty {
+        var request = new CreateAstronautDuty
+        {
             Name = "James",
             DutyTitle = "Crew Member",
             Rank = "Admiral",
@@ -226,7 +229,8 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
     [Fact]
     public async Task Post_AddAstronautDutyForRetirement_UpdatesCareerEndDate()
     {
-        var request = new CreateAstronautDuty {
+        var request = new CreateAstronautDuty
+        {
             Name = "Yuri",
             DutyTitle = "RETIRED",
             Rank = "Colonel",
@@ -252,14 +256,16 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
         var firstDutyStartDate = new DateTime(1962, 6, 12);
         var secondDutyStartDate = new DateTime(1962, 7, 1);
 
-        var request = new CreateAstronautDuty {
+        var request = new CreateAstronautDuty
+        {
             Name = personName,
             DutyTitle = "Designer",
             Rank = "Lieutenant Colonel",
             DutyStartDate = firstDutyStartDate
         };
 
-        var request2 = new CreateAstronautDuty {
+        var request2 = new CreateAstronautDuty
+        {
             Name = personName,
             DutyTitle = "Pilot",
             Rank = "Lieutenant Colonel",
@@ -289,6 +295,23 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
 
         Assert.Equal(2, lastTwoAstronautDuties.Count());
         Assert.Equal(secondDutyStartDate.AddDays(-1), lastTwoAstronautDuties.Last().DutyEndDate);
+    }
+
+    #endregion
+
+    #region Log exception responses
+
+    [Fact]
+    public async Task HttpResponseExceptionFilter_HandlesException_NotFound()
+    {
+        var invalidPersonName = "--'";
+
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync($"/Person/{invalidPersonName}");
+
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     #endregion

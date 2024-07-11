@@ -4,6 +4,7 @@ using MediatR;
 using StargateAPI.Business.Data;
 using StargateAPI.Business.Dtos;
 using StargateAPI.Controllers;
+using StargateAPI.Exceptions;
 
 namespace StargateAPI.Business.Queries
 {
@@ -31,20 +32,14 @@ namespace StargateAPI.Business.Queries
 
             var person = await _context.Connection.QueryAsync<Person>(query, parameters);
 
-            if (person.Any())
+            if (!person.Any())
             {
-                return new GetPersonByNameResult()
-                {
-                    Person = person?.First()
-                };
+                throw new HttpResponseException(HttpStatusCode.NotFound, $"Requested person could not be found: {request.Name}");
             }
 
-            return new GetPersonByNameResult
+            return new GetPersonByNameResult()
             {
-                Person = null,
-                Success = false,
-                Message = $"Failed to locate {nameof(Person)} by {nameof(request.Name)}: {request.Name}",
-                ResponseCode = (int)HttpStatusCode.NotFound
+                Person = person?.First()
             };
         }
     }
