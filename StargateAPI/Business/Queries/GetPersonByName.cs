@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Dapper;
 using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using StargateAPI.Business.Data;
 using StargateAPI.Business.Dtos;
 using StargateAPI.Controllers;
@@ -34,7 +35,14 @@ namespace StargateAPI.Business.Queries
 
             if (!person.Any())
             {
-                throw new HttpResponseException(HttpStatusCode.NotFound, $"Requested person could not be found: {request.Name}");
+                throw new HttpResponseException(new GetPersonByNameResult
+                {
+                    Person = null,
+                    ResponseCode = (int)HttpStatusCode.NotFound,
+                    Message = "Person not found.",
+                    Success = false
+                })
+                ;
             }
 
             return new GetPersonByNameResult()

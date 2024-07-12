@@ -1,10 +1,7 @@
-using System.Net;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using StargateAPI.Business.Commands;
 using StargateAPI.Controllers;
 using StargateAPI.Logging;
 
@@ -27,41 +24,36 @@ public class HttpResponseExceptionFilter : IActionFilter, IOrderedFilter
     {
         if (context.Exception != null)
         {
-            _logger.FailedRequest(context.Controller, context.HttpContext.Request.GetDisplayUrl());
-
-            if (context.Exception is not HttpResponseException)
-            {
-                context.ExceptionHandled = true;
-            }
+            _logger.FailedRequest(context.HttpContext.Request.Method, context.HttpContext.Request.GetEncodedUrl(), context.ActionDescriptor.DisplayName!);
         }
 
         if (context.Exception is HttpResponseException httpResponseException)
         {
-            context.ModelState.TryAddModelException(nameof(HttpResponseException), httpResponseException);    
-            context.Result = new ObjectResult(httpResponseException.Value)
+            if (httpResponseException.Value is BaseResponse response)
             {
-                StatusCode = (int)httpResponseException.StatusCode
-            };
+                context.HttpContext.Response.StatusCode = response.ResponseCode;
+            }
 
+            context.Result = new ObjectResult(httpResponseException.Value);
             context.ExceptionHandled = true;
         }
 
-        if (context.Result is ObjectResult objectResult
-            && objectResult.Value is BaseResponse baseResponse)
+        if (context.Result is BaseResponse baseResponse)
         {
-            if (!baseResponse.Success && !context.ExceptionHandled)
+            context.Result = new ObjectResult(baseResponse)
             {
-                _logger.FailedRequest(context.Controller, context.HttpContext.Request.GetDisplayUrl());
-            }
-            if (baseResponse.Success)
+                StatusCode = baseResponse.ResponseCode
+            };
+
+            if (!baseResponse.Success)
             {
-                _logger.SuccessfulRequest(context.Controller, context.HttpContext.Request.GetDisplayUrl());
+                _logger.FailedRequest(context.HttpContext.Request.Method, context.HttpContext.Request.GetEncodedUrl(), context.ActionDescriptor.DisplayName!);
             }
         }
 
-        context.Result ??= new ObjectResult(context.HttpContext.Response)
+        if (context.Exception == null && context.ModelState.IsValid)
         {
-            StatusCode = context.HttpContext.Response.StatusCode
-        };
+            _logger.SuccessfulRequest(context.HttpContext.Request.Method, context.HttpContext.Request.GetEncodedUrl(), context.ActionDescriptor.DisplayName!);
+        }
     }
 }

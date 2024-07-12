@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using StargateAPI.Business.Commands;
 using StargateAPI.Business.Data;
 using StargateAPI.Business.Queries;
+using StargateAPI.Controllers;
 using StargateApiTests.Fixtures;
 using StargateApiTests.Specifications;
 
@@ -110,11 +111,11 @@ public class WebApplicationTests(StargateWebApplicationFactory factory, DbSetTes
 
         response.EnsureSuccessStatusCode();
 
-        Assert.Equal(HttpStatusCode.InternalServerError, response2.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response2.StatusCode);
         var result2 = await response2.Content.ReadFromJsonAsync<CreatePersonResult>();
         Assert.NotNull(result2);
         Assert.False(result2.Success);
-        Assert.Equal(0, result2.Id);
+        Assert.Equal((int)HttpStatusCode.BadRequest, result2.ResponseCode);
     }
 
     #endregion

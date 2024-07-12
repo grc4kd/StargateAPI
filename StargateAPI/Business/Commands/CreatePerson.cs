@@ -1,8 +1,10 @@
-﻿using MediatR;
+﻿using System.Net;
+using MediatR;
 using MediatR.Pipeline;
 using Microsoft.EntityFrameworkCore;
 using StargateAPI.Business.Data;
 using StargateAPI.Controllers;
+using StargateAPI.Exceptions;
 
 namespace StargateAPI.Business.Commands
 {
@@ -22,8 +24,15 @@ namespace StargateAPI.Business.Commands
         {
             var person = _context.People.AsNoTracking().FirstOrDefault(z => z.Name == request.Name);
 
-            if (person is not null) throw new BadHttpRequestException("Bad Request");
-
+            if (person is not null) {
+                throw new HttpResponseException(new CreatePersonResult
+                {
+                    Id = 0,
+                    ResponseCode = (int)HttpStatusCode.BadRequest,
+                    Success = false,
+                    Message = "Bad Request"
+                });
+            }
             return Task.CompletedTask;
         }
     }

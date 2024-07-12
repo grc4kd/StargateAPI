@@ -36,7 +36,7 @@ namespace StargateAPI.Business.Commands
 
             if (person is null)
             {
-                throw new HttpResponseException(HttpStatusCode.NotFound, new CreateAstronautDutyResult
+                throw new HttpResponseException(new CreateAstronautDutyResult
                 {
                     Id = 0,
                     Message = "Person Not Found",
