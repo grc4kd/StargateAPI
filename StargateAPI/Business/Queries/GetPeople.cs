@@ -1,40 +1,31 @@
-﻿using Dapper;
-using MediatR;
+﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
 using StargateAPI.Business.Data;
 using StargateAPI.Business.Dtos;
-using StargateAPI.Controllers;
+using StargateAPI.Business.Responses;
 
 namespace StargateAPI.Business.Queries
 {
-    public class GetPeople : IRequest<GetPeopleResult>
-    {
+    public record GetPeople : IRequest<GetPeopleResponse>;
 
-    }
-
-    public class GetPeopleHandler : IRequestHandler<GetPeople, GetPeopleResult>
+    public class GetPeopleHandler(StargateContext context) : IRequestHandler<GetPeople, GetPeopleResponse>
     {
-        public readonly StargateContext _context;
-        public GetPeopleHandler(StargateContext context)
+        public readonly StargateContext _context = context;
+
+        public async Task<GetPeopleResponse> Handle(GetPeople request, CancellationToken cancellationToken)
         {
-            _context = context;
+            return new GetPeopleResponse(await _context.People
+                .AsNoTracking()
+                .Include(a => a.AstronautDetail)
+                .Select(pa => new PersonAstronaut
+                {
+                    CareerEndDate = pa.AstronautDetail!.CareerEndDate,
+                    CareerStartDate = pa.AstronautDetail.CareerStartDate,
+                    CurrentDutyTitle = pa.AstronautDetail.CurrentDutyTitle,
+                    CurrentRank = pa.AstronautDetail.CurrentRank,
+                    Name = pa.Name,
+                    PersonId = pa.Id
+                }).ToListAsync(cancellationToken: cancellationToken));
         }
-        public async Task<GetPeopleResult> Handle(GetPeople request, CancellationToken cancellationToken)
-        {
-            var result = new GetPeopleResult();
-
-            var query = $"SELECT a.Id as PersonId, a.Name, b.CurrentRank, b.CurrentDutyTitle, b.CareerStartDate, b.CareerEndDate FROM [Person] a LEFT JOIN [AstronautDetail] b on b.PersonId = a.Id";
-
-            var people = await _context.Connection.QueryAsync<PersonAstronaut>(query);
-
-            result.People = people.ToList();
-
-            return result;
-        }
-    }
-
-    public class GetPeopleResult : BaseResponse
-    {
-        public List<PersonAstronaut> People { get; set; } = new List<PersonAstronaut> { };
-
     }
 }

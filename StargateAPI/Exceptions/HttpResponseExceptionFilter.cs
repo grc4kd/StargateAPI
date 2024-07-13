@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Http.Extensions;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using StargateAPI.Controllers;
+using StargateAPI.Business.Responses;
 using StargateAPI.Logging;
 
 namespace StargateAPI.Exceptions;
@@ -25,33 +24,20 @@ public class HttpResponseExceptionFilter : IActionFilter, IOrderedFilter
         if (context.Exception != null)
         {
             _logger.FailedRequest(context.HttpContext.Request.Method, context.HttpContext.Request.GetEncodedUrl(), context.ActionDescriptor.DisplayName!);
-        }
 
-        if (context.Exception is HttpResponseException httpResponseException)
-        {
-            if (httpResponseException.Value is BaseResponse response)
+            if (context.Exception is HttpResponseException httpResponseException)
             {
-                context.HttpContext.Response.StatusCode = response.ResponseCode;
-            }
-
-            context.Result = new ObjectResult(httpResponseException.Value);
-            context.ExceptionHandled = true;
-        }
-
-        if (context.Result is BaseResponse baseResponse)
-        {
-            context.Result = new ObjectResult(baseResponse)
-            {
-                StatusCode = baseResponse.ResponseCode
-            };
-
-            if (!baseResponse.Success)
-            {
-                _logger.FailedRequest(context.HttpContext.Request.Method, context.HttpContext.Request.GetEncodedUrl(), context.ActionDescriptor.DisplayName!);
+                IBaseResponse baseResponse = httpResponseException.Value;
+                context.Result = new ObjectResult(baseResponse)
+                {
+                    StatusCode = (int)baseResponse.StatusCode
+                };
+                context.HttpContext.Response.StatusCode = (int)baseResponse.StatusCode;
+                context.ExceptionHandled = true;
             }
         }
 
-        if (context.Exception == null && context.ModelState.IsValid)
+        if (context.Exception == null)
         {
             _logger.SuccessfulRequest(context.HttpContext.Request.Method, context.HttpContext.Request.GetEncodedUrl(), context.ActionDescriptor.DisplayName!);
         }

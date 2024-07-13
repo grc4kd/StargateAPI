@@ -1,9 +1,9 @@
-using StargateAPI.Business.Data;
+using StargateApiTests.Data;
 using StargateApiTests.Specifications;
 
 namespace StargateApiTests.Helpers;
 
-public class DbSeedDataTests : UnitTest
+public class DbDataTests : UnitTest
 {
     [Fact]
     public void DataRules_SeedData_PersonUniqueIdByNameField()
@@ -17,6 +17,24 @@ public class DbSeedDataTests : UnitTest
                     Count = personGroup.Count()
                 })
                 .Where(g => g.Count > 1);
+
+        Assert.Empty(duplicates);
+    }
+
+    [Fact]
+    public void DataRules_StaticData_PersonUniqueIdByNameField()
+    {
+        var names = DbSeedData.Names.Concat([DbInsertTestData.NewName]);
+
+        var duplicates =
+            from n in names
+            group n by n into nameGroup
+            where nameGroup.Count() > 1
+            select new
+            {
+                nameGroup.Key,
+                Count = nameGroup.Count()
+            };
 
         Assert.Empty(duplicates);
     }

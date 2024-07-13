@@ -1,5 +1,5 @@
 using System.Reflection;
-using StargateAPI.Controllers;
+using StargateAPI.Business.Responses;
 using StargateApiTests.Specifications;
 
 namespace StargateApiTests.Controllers;
@@ -11,13 +11,12 @@ public class BaseResponseTests : UnitTest
     {
         var assembly = Assembly.GetAssembly(typeof(Program));
         var assemblyTypes = AssemblyExtensions.GetTypes(assembly!);
-        var responseTypes = assemblyTypes.Where(t => t.BaseType == typeof(BaseResponse));
+        var responseTypes = assemblyTypes.Where(t => t.BaseType == typeof(IBaseResponse));
         var defaultProperties = new List<string> {
-                nameof(BaseResponse.Success),
-                nameof(BaseResponse.Message),
-                nameof(BaseResponse.ResponseCode)
+                nameof(IBaseResponse.Success),
+                nameof(IBaseResponse.Message),
+                nameof(IBaseResponse.StatusCode)
             };
-        var defaultBaseResponse = new BaseResponse();
 
         Assert.NotNull(assembly);
         foreach (Type derivedType in responseTypes)
@@ -29,7 +28,8 @@ public class BaseResponseTests : UnitTest
                 var propertyInfo = derivedType.GetProperty(propertyName);
                 var propertyGetMethod = propertyInfo?.GetGetMethod();
                 var propertyValue = propertyGetMethod?.Invoke(derivedObject, null);
-                var defaultValue = defaultBaseResponse.GetType().GetProperty(propertyName)?.GetGetMethod()?.Invoke(defaultBaseResponse, null);
+                object defaultValue = new();
+                typeof(IBaseResponse).GetProperty(propertyName)?.GetGetMethod()?.Invoke(defaultValue, null);
 
                 Assert.NotNull(propertyInfo);
                 Assert.NotNull(propertyGetMethod);

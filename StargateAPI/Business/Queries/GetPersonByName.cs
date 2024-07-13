@@ -1,20 +1,14 @@
-﻿using System.Net;
-using Dapper;
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
+﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
 using StargateAPI.Business.Data;
-using StargateAPI.Business.Dtos;
-using StargateAPI.Controllers;
+using StargateAPI.Business.Responses;
 using StargateAPI.Exceptions;
 
 namespace StargateAPI.Business.Queries
 {
-    public class GetPersonByName : IRequest<GetPersonByNameResult>
-    {
-        public required string Name { get; set; } = string.Empty;
-    }
+    public record GetPersonByName(string Name) : IRequest<GetPersonByNameResponse>;
 
-    public class GetPersonByNameHandler : IRequestHandler<GetPersonByName, GetPersonByNameResult>
+    public class GetPersonByNameHandler : IRequestHandler<GetPersonByName, GetPersonByNameResponse>
     {
         private readonly StargateContext _context;
         public GetPersonByNameHandler(StargateContext context)
@@ -22,38 +16,16 @@ namespace StargateAPI.Business.Queries
             _context = context;
         }
 
-        public async Task<GetPersonByNameResult> Handle(GetPersonByName request, CancellationToken cancellationToken)
+        public async Task<GetPersonByNameResponse> Handle(GetPersonByName request, CancellationToken cancellationToken)
         {
-            var parameters = new { request.Name };
-            var query = @"SELECT Id as PersonId, Name
-            FROM [Person]
-            WHERE @Name = Name 
-            ORDER BY Id DESC 
-            LIMIT 1";
+            var person = await _context.People
+                .AsNoTracking()
+                .SingleOrDefaultAsync(p => p.Name == request.Name, cancellationToken)
+                    ?? throw new HttpResponseException(
+                        new NameNotFoundResponse(request.Name)
+                    );
 
-            var person = await _context.Connection.QueryAsync<Person>(query, parameters);
-
-            if (!person.Any())
-            {
-                throw new HttpResponseException(new GetPersonByNameResult
-                {
-                    Person = null,
-                    ResponseCode = (int)HttpStatusCode.NotFound,
-                    Message = "Person not found.",
-                    Success = false
-                })
-                ;
-            }
-
-            return new GetPersonByNameResult()
-            {
-                Person = person?.First()
-            };
+            return new GetPersonByNameResponse(person);
         }
-    }
-
-    public class GetPersonByNameResult : BaseResponse
-    {
-        public Person? Person { get; set; }
     }
 }

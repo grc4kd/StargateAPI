@@ -1,14 +1,13 @@
-﻿using System.Net;
-using MediatR;
+﻿using MediatR;
 using MediatR.Pipeline;
 using Microsoft.EntityFrameworkCore;
 using StargateAPI.Business.Data;
-using StargateAPI.Controllers;
+using StargateAPI.Business.Responses;
 using StargateAPI.Exceptions;
 
 namespace StargateAPI.Business.Commands
 {
-    public class CreatePerson : IRequest<CreatePersonResult>
+    public class CreatePerson : IRequest<CreatePersonResponse>
     {
         public required string Name { get; set; } = string.Empty;
     }
@@ -20,24 +19,20 @@ namespace StargateAPI.Business.Commands
         {
             _context = context;
         }
-        public Task Process(CreatePerson request, CancellationToken cancellationToken)
+        public async Task Process(CreatePerson request, CancellationToken cancellationToken)
         {
-            var person = _context.People.AsNoTracking().FirstOrDefault(z => z.Name == request.Name);
+            var extantPerson = await _context.People
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Name == request.Name, cancellationToken: cancellationToken);
 
-            if (person is not null) {
-                throw new HttpResponseException(new CreatePersonResult
-                {
-                    Id = 0,
-                    ResponseCode = (int)HttpStatusCode.BadRequest,
-                    Success = false,
-                    Message = "Bad Request"
-                });
+            if (extantPerson != null)
+            {
+                throw new HttpResponseException(new NameNotUniqueResponse(extantPerson.Name));
             }
-            return Task.CompletedTask;
         }
     }
 
-    public class CreatePersonHandler : IRequestHandler<CreatePerson, CreatePersonResult>
+    public class CreatePersonHandler : IRequestHandler<CreatePerson, CreatePersonResponse>
     {
         private readonly StargateContext _context;
 
@@ -45,28 +40,20 @@ namespace StargateAPI.Business.Commands
         {
             _context = context;
         }
-        public async Task<CreatePersonResult> Handle(CreatePerson request, CancellationToken cancellationToken)
+        public async Task<CreatePersonResponse> Handle(CreatePerson request, CancellationToken cancellationToken)
         {
 
-                var newPerson = new Person()
-                {
-                   Name = request.Name
-                };
+            var newPerson = new Person()
+            {
+                Name = request.Name
+            };
 
-                await _context.People.AddAsync(newPerson);
+            await _context.People.AddAsync(newPerson);
 
-                await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
-                return new CreatePersonResult()
-                {
-                    Id = newPerson.Id
-                };
-          
+            return new CreatePersonResponse(newPerson.Id);
+
         }
-    }
-
-    public class CreatePersonResult : BaseResponse
-    {
-        public int Id { get; set; }
     }
 }

@@ -1,8 +1,8 @@
-using System.Net;
+using StargateAPI.Business.Responses;
 
 namespace StargateAPI.Exceptions;
 
-public class HttpResponseException(object? value = null) : Exception
+public class HttpResponseException(IBaseResponse Value) : Exception
 {
-    public object? Value { get; } = value;
+    public IBaseResponse Value { get; } = Value;
 }

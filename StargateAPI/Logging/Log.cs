@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Mvc.Abstractions;
-
 namespace StargateAPI.Logging;
 
 public static partial class Log

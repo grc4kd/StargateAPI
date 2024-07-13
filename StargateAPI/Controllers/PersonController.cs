@@ -2,11 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using StargateAPI.Business.Commands;
 using StargateAPI.Business.Queries;
-using System.Net;
+using StargateAPI.Business.Responses;
 
 namespace StargateAPI.Controllers
 {
-   
+
     [ApiController]
     [Route("[controller]")]
     public class PersonController : ControllerBase
@@ -18,57 +18,24 @@ namespace StargateAPI.Controllers
         }
 
         [HttpGet("")]
-        public async Task<IActionResult> GetPeople()
+        public async Task<GetPeopleResponse> GetPeople()
         {
-            try
-            {
-                var result = await _mediator.Send(new GetPeople()
-                {
-
-                });
-
-                return this.GetResponse(result);
-            }
-            catch (Exception ex)
-            {
-                return this.GetResponse(new BaseResponse()
-                {
-                    Message = ex.Message,
-                    Success = false,
-                    ResponseCode = (int)HttpStatusCode.InternalServerError
-                });
-            }
+            return await _mediator.Send(new GetPeople());
         }
 
         [HttpGet("{name}")]
-        public async Task<ActionResult<GetPersonByNameResult>> GetPersonByName(string name)
+        public async Task<GetPersonByNameResponse> GetPersonByName(string name)
         {
-            return await _mediator.Send(new GetPersonByName()
-            {
-                Name = name
-            });
+            return await _mediator.Send(new GetPersonByName(name));
         }
 
         [HttpPost("")]
-        public async Task<ActionResult<CreatePersonResult>> CreatePerson([FromBody] string name)
+        public async Task<ActionResult<CreatePersonResponse>> CreatePerson([FromBody] string name)
         {
             return await _mediator.Send(new CreatePerson()
-                {
-                    Name = name
-                });
-
-            //     return this.GetResponse(result);
-            // }
-            // catch (Exception ex)
-            // {
-            //     return this.GetResponse(new BaseResponse()
-            //     {
-            //         Message = ex.Message,
-            //         Success = false,
-            //         ResponseCode = (int)HttpStatusCode.InternalServerError
-            //     });
-            // }
-
+            {
+                Name = name
+            });
         }
     }
 }

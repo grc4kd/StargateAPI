@@ -1,49 +1,27 @@
-﻿using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using StargateAPI.Business.Commands;
+﻿using StargateAPI.Business.Commands;
 using StargateAPI.Business.Queries;
-using System.Net;
+using StargateAPI.Business.Responses;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace StargateAPI.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class AstronautDutyController : ControllerBase
+    public class AstronautDutyController(IMediator mediator) : ControllerBase
     {
-        private readonly IMediator _mediator;
-        public AstronautDutyController(IMediator mediator)
-        {
-            _mediator = mediator;
-        }
+        private readonly IMediator _mediator = mediator;
 
         [HttpGet("{name}")]
-        public async Task<IActionResult> GetAstronautDutiesByName(string name)
+        public async Task<ActionResult<GetAstronautDutiesByNameResult>> GetAstronautDutiesByName(string name)
         {
-            try
-            {
-                var result = await _mediator.Send(new GetAstronautDutiesByName()
-                {
-                    Name = name
-                });
-
-                return this.GetResponse(result);
-            }
-            catch (Exception ex)
-            {
-                return this.GetResponse(new BaseResponse()
-                {
-                    Message = ex.Message,
-                    Success = false,
-                    ResponseCode = (int)HttpStatusCode.InternalServerError
-                });
-            }            
+            return await _mediator.Send(new GetAstronautDutiesByName(name));
         }
 
         [HttpPost("")]
-        public async Task<IActionResult> CreateAstronautDuty([FromBody] CreateAstronautDuty request)
+        public async Task<ActionResult<CreateAstronautDutyResponse>> CreateAstronautDuty([FromBody] CreateAstronautDuty request)
         {
-            var result = await _mediator.Send(request);
-            return this.GetResponse(result);           
+            return await _mediator.Send(request);
         }
     }
 }
