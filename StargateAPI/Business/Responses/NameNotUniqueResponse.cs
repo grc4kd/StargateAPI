@@ -1,13 +1,6 @@
 using System.Net;
 
-namespace StargateAPI.Business.Responses
-{
-    public record NameNotUniqueResponse(string Name) : IBaseResponse
-    {
-        public string Message => $"The name {Name} already exists in the database.";
+namespace StargateAPI.Business.Responses;
 
-        public bool Success => false;
-
-        public HttpStatusCode StatusCode => HttpStatusCode.Conflict;
-    }
-}
+public record NameNotUniqueResponse(string Name) 
+    : BaseResponse($"The name {Name} already exists in the database.", Success: false, HttpStatusCode.Conflict);

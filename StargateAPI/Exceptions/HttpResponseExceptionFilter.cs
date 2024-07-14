@@ -6,14 +6,9 @@ using StargateAPI.Logging;
 
 namespace StargateAPI.Exceptions;
 
-public class HttpResponseExceptionFilter : IActionFilter, IOrderedFilter
+public class HttpResponseExceptionFilter(ILogger<HttpResponseExceptionFilter> logger) : IActionFilter, IOrderedFilter
 {
-    private readonly ILogger _logger;
-
-    public HttpResponseExceptionFilter(ILogger<HttpResponseExceptionFilter> logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger _logger = logger;
 
     public int Order => int.MaxValue - 10;
 

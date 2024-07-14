@@ -12,13 +12,10 @@ namespace StargateAPI.Business.Commands
         public required string Name { get; set; } = string.Empty;
     }
 
-    public class CreatePersonPreProcessor : IRequestPreProcessor<CreatePerson>
+    public class CreatePersonPreProcessor(StargateContext context) : IRequestPreProcessor<CreatePerson>
     {
-        private readonly StargateContext _context;
-        public CreatePersonPreProcessor(StargateContext context)
-        {
-            _context = context;
-        }
+        private readonly StargateContext _context = context;
+
         public async Task Process(CreatePerson request, CancellationToken cancellationToken)
         {
             var extantPerson = await _context.People
@@ -32,25 +29,20 @@ namespace StargateAPI.Business.Commands
         }
     }
 
-    public class CreatePersonHandler : IRequestHandler<CreatePerson, CreatePersonResponse>
+    public class CreatePersonHandler(StargateContext context) : IRequestHandler<CreatePerson, CreatePersonResponse>
     {
-        private readonly StargateContext _context;
+        private readonly StargateContext _context = context;
 
-        public CreatePersonHandler(StargateContext context)
-        {
-            _context = context;
-        }
         public async Task<CreatePersonResponse> Handle(CreatePerson request, CancellationToken cancellationToken)
         {
-
             var newPerson = new Person()
             {
                 Name = request.Name
             };
 
-            await _context.People.AddAsync(newPerson);
+            await _context.People.AddAsync(newPerson, cancellationToken);
 
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
 
             return new CreatePersonResponse(newPerson.Id);
 

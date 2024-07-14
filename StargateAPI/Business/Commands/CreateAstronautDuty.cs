@@ -10,14 +10,9 @@ namespace StargateAPI.Business.Commands
     public record CreateAstronautDuty(string Name, string Rank, string DutyTitle, DateTime DutyStartDate)
         : IRequest<CreateAstronautDutyResponse>;
 
-    public class CreateAstronautDutyPreProcessor : IRequestPreProcessor<CreateAstronautDuty>
+    public class CreateAstronautDutyPreProcessor(StargateContext context) : IRequestPreProcessor<CreateAstronautDuty>
     {
-        private readonly StargateContext _context;
-
-        public CreateAstronautDutyPreProcessor(StargateContext context)
-        {
-            _context = context;
-        }
+        private readonly StargateContext _context = context;
 
         public Task Process(CreateAstronautDuty request, CancellationToken cancellationToken)
         {
@@ -30,14 +25,10 @@ namespace StargateAPI.Business.Commands
         }
     }
 
-    public class CreateAstronautDutyHandler : IRequestHandler<CreateAstronautDuty, CreateAstronautDutyResponse>
+    public class CreateAstronautDutyHandler(StargateContext context) : IRequestHandler<CreateAstronautDuty, CreateAstronautDutyResponse>
     {
-        private readonly StargateContext _context;
+        private readonly StargateContext _context = context;
 
-        public CreateAstronautDutyHandler(StargateContext context)
-        {
-            _context = context;
-        }
         public async Task<CreateAstronautDutyResponse> Handle(CreateAstronautDuty request, CancellationToken cancellationToken)
         {
             var person = await _context.People

@@ -13,13 +13,13 @@ namespace StargateAPI.Controllers
         private readonly IMediator _mediator = mediator;
 
         [HttpGet("{name}")]
-        public async Task<ActionResult<GetAstronautDutiesByNameResult>> GetAstronautDutiesByName(string name)
+        public async Task<GetAstronautDutiesByNameResult> GetAstronautDutiesByName(string name)
         {
             return await _mediator.Send(new GetAstronautDutiesByName(name));
         }
 
-        [HttpPost("")]
-        public async Task<ActionResult<CreateAstronautDutyResponse>> CreateAstronautDuty([FromBody] CreateAstronautDuty request)
+        [HttpPost]
+        public async Task<CreateAstronautDutyResponse> CreateAstronautDuty([FromBody] CreateAstronautDuty request)
         {
             return await _mediator.Send(request);
         }

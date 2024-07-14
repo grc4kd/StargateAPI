@@ -1,13 +1,6 @@
 using System.Net;
 
-namespace StargateAPI.Business.Responses
-{
-    public record CreateAstronautDutyResponse(int Id) : IBaseResponse
-    {
-        public string Message => "Created astronaut duty successfully.";
+namespace StargateAPI.Business.Responses;
 
-        public bool Success => true;
-
-        public HttpStatusCode StatusCode => HttpStatusCode.OK;
-    }
-}
+public record CreateAstronautDutyResponse(int Id) 
+    : BaseResponse("Created astronaut duty successfully.", Success: true, HttpStatusCode.OK);
