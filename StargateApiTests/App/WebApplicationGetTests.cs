@@ -56,7 +56,7 @@ public class WebApplicationGetTests : IntegrationTest, IClassFixture<StargateWeb
         Assert.IsType<GetPersonByNameResponse>(result);
         Assert.False(result.Success);
         Assert.Equal(HttpStatusCode.NotFound, result.StatusCode);
-        Assert.Null(result.Person);
+        Assert.Null(result.PersonAstronaut);
     }
 
     [Fact]
@@ -70,10 +70,10 @@ public class WebApplicationGetTests : IntegrationTest, IClassFixture<StargateWeb
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var result = await response.Content.ReadFromJsonAsync<GetPersonByNameResponse>();
         Assert.IsType<GetPersonByNameResponse>(result);
-        Assert.NotNull(result.Person);
+        Assert.NotNull(result.PersonAstronaut);
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
         Assert.True(result.Success);
-        Assert.Equal(personName, result.Person.Name);
+        Assert.Equal(personName, result.PersonAstronaut.Name);
     }
 
     #endregion

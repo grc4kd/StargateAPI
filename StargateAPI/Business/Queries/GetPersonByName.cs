@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using StargateAPI.Business.Data;
+using StargateAPI.Business.Dtos;
 using StargateAPI.Business.Responses;
 using StargateAPI.Exceptions;
 
@@ -16,6 +17,14 @@ namespace StargateAPI.Business.Queries
         {
             var person = await _context.People
                 .AsNoTracking()
+                .Select(p => new PersonAstronaut{
+                    PersonId = p.Id,
+                    Name = p.Name,
+                    CareerEndDate = p.AstronautDetail!.CareerEndDate,
+                    CareerStartDate = p.AstronautDetail.CareerStartDate,
+                    CurrentDutyTitle = p.AstronautDetail.CurrentDutyTitle,
+                    CurrentRank = p.AstronautDetail.CurrentRank
+                })
                 .SingleOrDefaultAsync(p => p.Name == request.Name, cancellationToken)
                     ?? throw new HttpResponseException(
                         new NameNotFoundResponse(request.Name)
