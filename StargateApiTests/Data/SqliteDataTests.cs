@@ -30,15 +30,15 @@ public class SqliteDataTests : IntegrationTest, IDisposable
             .UseSqlite(_connection)
             .Options;
 
-        using var context = new StargateContext(_contextOptions);
-
-        if (context.Database.EnsureCreated())
+        using (var context = new StargateContext(_contextOptions))
         {
+            context.Database.EnsureCreated();
+
             context.People.RemoveRange(context.People);
             context.SaveChanges();
 
             context.AddRange(DbSeedData.GetFullData());
-            context.SaveChanges();
+            context.SaveChanges();    
         }
 
         var services = new ServiceCollection();

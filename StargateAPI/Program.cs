@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using StargateAPI.Business.Commands;
 using StargateAPI.Business.Data;
 using StargateAPI.Exceptions;
@@ -34,6 +35,11 @@ builder.Services.AddMediatR(cfg =>
     cfg.AddRequestPreProcessor<CreatePersonPreProcessor>();
     cfg.RegisterServicesFromAssemblies(typeof(Program).Assembly);
 });
+
+var serilogConfiguration = new LoggerConfiguration()
+    .WriteTo.SQLite(@"Logs/log.db");
+serilogConfiguration.MinimumLevel.Verbose();
+builder.Services.AddSingleton<Serilog.ILogger>((container) => serilogConfiguration.CreateLogger());
 
 var app = builder.Build();
 

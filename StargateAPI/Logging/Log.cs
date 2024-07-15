@@ -1,16 +1,14 @@
 namespace StargateAPI.Logging;
 
-public static partial class Log
+public static class Log
 {
-    [LoggerMessage(
-        EventId = 0,
-        Level = LogLevel.Error,
-        Message = "Failed request {method}: {requestUrl} {action}")]
-    public static partial void FailedRequest(this ILogger logger, string method, string requestUrl, string action);
+    public static void FailedRequest(this Serilog.ILogger logger, string method, string requestUrl, string action)
+    {
+        logger.Error("Failed request {method}: {requestUrl} {action}", method, requestUrl, action);
+    }
 
-    [LoggerMessage(
-        EventId = 1,
-        Level = LogLevel.Trace,
-        Message = "Successful request {method}: {requestUrl} {action}.")]
-    public static partial void SuccessfulRequest(this ILogger logger, string method, string requestUrl, string action);
+    public static void SuccessfulRequest(this Serilog.ILogger logger, string method, string requestUrl, string action)
+    {
+        logger.Verbose("Successful request {method}: {requestUrl} {action}.", method, requestUrl, action);
+    }
 }
