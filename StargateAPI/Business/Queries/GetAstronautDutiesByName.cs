@@ -23,8 +23,7 @@ namespace StargateAPI.Business.Queries
                 throw new HttpResponseException(new NameNotFoundResponse(request.Name));
             }
 
-            return new GetAstronautDutiesByNameResult(
-                await query.ToListAsync(cancellationToken));
+            return new GetAstronautDutiesByNameResult(query);
         }
     }
 }

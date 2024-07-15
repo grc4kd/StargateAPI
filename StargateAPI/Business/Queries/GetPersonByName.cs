@@ -8,13 +8,9 @@ namespace StargateAPI.Business.Queries
 {
     public record GetPersonByName(string Name) : IRequest<GetPersonByNameResponse>;
 
-    public class GetPersonByNameHandler : IRequestHandler<GetPersonByName, GetPersonByNameResponse>
+    public class GetPersonByNameHandler(StargateContext context) : IRequestHandler<GetPersonByName, GetPersonByNameResponse>
     {
-        private readonly StargateContext _context;
-        public GetPersonByNameHandler(StargateContext context)
-        {
-            _context = context;
-        }
+        private readonly StargateContext _context = context;
 
         public async Task<GetPersonByNameResponse> Handle(GetPersonByName request, CancellationToken cancellationToken)
         {

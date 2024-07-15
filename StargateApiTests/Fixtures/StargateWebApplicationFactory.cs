@@ -5,12 +5,46 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using StargateAPI.Business.Data;
+using StargateApiTests.Data;
+using StargateApiTests.Helpers;
 
 namespace StargateApiTests.Fixtures;
 
 public class StargateWebApplicationFactory<TProgram>
     : WebApplicationFactory<TProgram> where TProgram : class
 {
+    private readonly DbConnection _connection;
+    private readonly DbContextOptions<StargateContext> _contextOptions;
+
+    public StargateWebApplicationFactory()
+    {
+        // Create open SqliteConnection so EF won't automatically close it.
+        _connection = new SqliteConnection("Filename=WebApplicationGetTests.db");
+        _connection.Open();
+
+        _contextOptions = new DbContextOptionsBuilder<StargateContext>()
+            .UseSqlite(_connection)
+            .Options;
+
+        using var context = new StargateContext(_contextOptions);
+
+        if (context.Database.EnsureCreated())
+        {
+            DbInitializer.InitializeDbForTests(context);
+        }
+    }
+
+    public void ReinitializeDbForTests()
+    {
+        using var context = new StargateContext(_contextOptions);
+
+        context.People.RemoveRange(context.People);
+        context.SaveChanges();
+
+        context.AddRange(DbSeedData.GetFullData());
+        context.SaveChanges();
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureServices(services =>
@@ -29,14 +63,7 @@ public class StargateWebApplicationFactory<TProgram>
                 services.Remove(dbConnectionDescriptor);
             }
 
-            // Create open SqliteConnection so EF won't automatically close it.
-            services.AddSingleton<DbConnection>(container =>
-            {
-                var connection = new SqliteConnection("DataSource=:memory:");
-                connection.Open();
-
-                return connection;
-            });
+            services.AddSingleton(_connection);
 
             services.AddDbContext<StargateContext>((container, options) =>
             {

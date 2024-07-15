@@ -38,4 +38,13 @@ public class DbDataTests : UnitTest
 
         Assert.Empty(duplicates);
     }
+
+    [Fact]
+    public void TestingRules_StaticData_NoDatabaseGeneratedIds()
+    {
+        Assert.DoesNotContain(DbSeedData.GetFullData(),
+            person => person.Id > 0
+            || person.AstronautDetail?.Id > 0
+            || person.AstronautDuties.Any(d => d.Id > 0));
+    }
 }

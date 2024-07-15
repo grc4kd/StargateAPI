@@ -5,16 +5,18 @@ namespace StargateApiTests.Helpers;
 
 public static class DbInitializer
 {
-    public static void InitializeDbForTests(StargateContext db)
+    public static void InitializeDbForTests(StargateContext context)
     {
-        db.AddRange(DbSeedData.GetFullData());
-        db.SaveChanges();
+        context.AddRange(DbSeedData.GetFullData());
+        context.SaveChanges();
     }
 
-    public static void ReinitializeDbForTests(StargateContext db)
+    public static void ReinitializeDbForTests(StargateContext context)
     {
-        db.RemoveRange(db.People);
-        db.SaveChanges();
-        InitializeDbForTests(db);
+        context.RemoveRange(context.People);
+        context.SaveChanges();
+
+        context.AddRange(DbSeedData.GetFullData());
+        context.SaveChanges();
     }
 }

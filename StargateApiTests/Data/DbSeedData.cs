@@ -10,7 +10,6 @@ public class DbSeedData
         => from idx in Enumerable.Range(0, Names.Count)
            select new Person
            {
-               Id = idx + 1,
                Name = Names.ElementAt(idx)
            };
 
@@ -63,17 +62,17 @@ public class DbSeedData
         }
     ];
 
-    public static IEnumerable<Person> GetFullData()
+    public static ImmutableList<Person> GetFullData()
     {
         var people = People.ToList();
-        int idx = 0;
 
-        foreach (var detail in AstronautDetails)
+        // zip together a shallow list of one detail - one duty - one person
+        for (int idx = 0; idx < AstronautDuties.Length; idx++)
         {
-            people.ElementAt(idx).AstronautDetail = detail;
-            people.ElementAt(idx).AstronautDuties.Add(AstronautDuties.ElementAt(idx));
+            people[idx].AstronautDetail = AstronautDetails[idx];
+            people[idx].AstronautDuties.Add(AstronautDuties[idx]);
         }
 
-        return people;
+        return people.ToImmutableList();
     }
 }
