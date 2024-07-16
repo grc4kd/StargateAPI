@@ -17,7 +17,7 @@ namespace StargateAPI.Business.Queries
             return new GetPeopleResponse(await _context.People
                 .AsNoTracking()
                 .Include(a => a.AstronautDetail)
-                .Select(pa => new PersonAstronaut
+                .Select(pa => new PersonAstronautDto
                 {
                     CareerEndDate = pa.AstronautDetail!.CareerEndDate,
                     CareerStartDate = pa.AstronautDetail.CareerStartDate,

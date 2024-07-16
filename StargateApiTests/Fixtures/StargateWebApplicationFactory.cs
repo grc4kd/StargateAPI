@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using StargateAPI.Business.Data;
 using StargateApiTests.Data;
-using StargateApiTests.Helpers;
 
 namespace StargateApiTests.Fixtures;
 
@@ -15,34 +14,42 @@ public class StargateWebApplicationFactory<TProgram>
 {
     private readonly DbConnection _connection;
     private readonly DbContextOptions<StargateContext> _contextOptions;
+    private static readonly object _lock = new();
 
     public StargateWebApplicationFactory()
     {
-        // Create open SqliteConnection so EF won't automatically close it.
-        _connection = new SqliteConnection("Filename=WebApplicationGetTests.db");
-        _connection.Open();
-
-        _contextOptions = new DbContextOptionsBuilder<StargateContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        using var context = new StargateContext(_contextOptions);
-
-        if (context.Database.EnsureCreated())
+        lock (_lock)
         {
-            DbInitializer.InitializeDbForTests(context);
+            // Create open SqliteConnection so EF won't automatically close it.
+            _connection = new SqliteConnection("Filename=:memory:");
+            _connection.Open();
+
+            _contextOptions = new DbContextOptionsBuilder<StargateContext>()
+                .UseSqlite(_connection)
+                .Options;
+
+            using var context = new StargateContext(_contextOptions);
+
+            if (context.Database.EnsureCreated())
+            {
+                context.AddRange(DbSeedData.GetFullData());
+                context.SaveChanges();
+            }
         }
     }
 
     public void ReinitializeDbForTests()
     {
-        using var context = new StargateContext(_contextOptions);
+        lock (_lock)
+        {
+            using var context = new StargateContext(_contextOptions);
 
-        context.People.RemoveRange(context.People);
-        context.SaveChanges();
+            context.People.RemoveRange(context.People);
+            context.SaveChanges();
 
-        context.AddRange(DbSeedData.GetFullData());
-        context.SaveChanges();
+            context.AddRange(DbSeedData.GetFullData());
+            context.SaveChanges();
+        }
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

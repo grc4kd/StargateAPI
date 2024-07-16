@@ -16,7 +16,16 @@ namespace StargateAPI.Business.Queries
         {
             var query = _context.AstronautDuties
                 .AsNoTracking()
-                .Where(d => d.Person.Name == request.Name);
+                .Where(d => d.Person.Name == request.Name)
+                .Select(q => new Dtos.AstronautDutyDto()
+                {
+                    Id = q.Id,
+                    PersonId = q.PersonId,
+                    Rank = q.Rank,
+                    DutyTitle = q.DutyTitle,
+                    DutyStartDate = q.DutyStartDate,
+                    DutyEndDate = q.DutyEndDate
+                });
 
             if (!await query.AnyAsync(cancellationToken: cancellationToken))
             {

@@ -35,8 +35,6 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreatePerson_TestNewName()
     {
-        _factory.ReinitializeDbForTests();
-
         var response = await _client.PostAsJsonAsync("/Person", DbInsertTestData.NewName);
 
         response.EnsureSuccessStatusCode();
@@ -50,8 +48,6 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreatePersonWithDuplicateName_ReturnsConflict()
     {
-        _factory.ReinitializeDbForTests();
-
         var name = DbInsertTestData.NewName;
         var response = await _client.PostAsJsonAsync("/Person", name);
         var response2 = await _client.PostAsJsonAsync("/Person", name);
@@ -73,8 +69,6 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreateAstronautDuty_ReturnsOk()
     {
-        _factory.ReinitializeDbForTests();
-
         var request = new CreateAstronautDuty
         (
             Name: "Yuri",
@@ -96,8 +90,6 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreateAstronautDutyForMissingPerson_ReturnsNotFound()
     {
-        _factory.ReinitializeDbForTests();
-
         var personName = "test name, missing person";
         var dutyStartDate = new DateTime(1962, 6, 12);
 
@@ -123,8 +115,6 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreateAstronautDutyForNewAstronaut_CreatesNewAstronautDetail()
     {
-        _factory.ReinitializeDbForTests();
-
         var request = new CreateAstronautDuty
         (
             Name: "James",
@@ -147,8 +137,6 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreateAstronautDutyForRetirement_UpdatesCareerEndDate()
     {
-        _factory.ReinitializeDbForTests();
-
         var request = new CreateAstronautDuty
         (
             Name: "Yuri",
@@ -171,8 +159,6 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreateConsecutiveAstronautDuty_UpdatesPriorDutyAssignment()
     {
-        _factory.ReinitializeDbForTests();
-
         var personName = "Yuri";
         var rank = "Lieutenant Colonel";
 
@@ -206,8 +192,6 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreateAstronautDutyWithSameStartDate_ReturnsConflict()
     {
-        _factory.ReinitializeDbForTests();
-
         var personName = "Yuri";
         var firstDutyStartDate = new DateTime(1962, 6, 12);
 

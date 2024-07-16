@@ -17,7 +17,7 @@ namespace StargateAPI.Business.Queries
         {
             var person = await _context.People
                 .AsNoTracking()
-                .Select(p => new PersonAstronaut{
+                .Select(p => new PersonAstronautDto{
                     PersonId = p.Id,
                     Name = p.Name,
                     CareerEndDate = p.AstronautDetail!.CareerEndDate,

@@ -1,74 +1,41 @@
 using System.Collections.Immutable;
-using System.Data.Common;
-using MediatR;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using StargateAPI.Business.Commands;
 using StargateAPI.Business.Data;
 using StargateAPI.Controllers;
+using StargateApiTests.Fixtures;
 using StargateApiTests.Helpers;
 using StargateApiTests.Specifications;
 
 namespace StargateApiTests.Data;
 
-public class SqliteDataTests : IntegrationTest, IDisposable
+public class SqliteDataTests : IntegrationTest, IClassFixture<SqliteDataTestFixture>, IDisposable
 {
-    private readonly DbConnection _connection;
-    private readonly DbContextOptions<StargateContext> _contextOptions;
+    private readonly SqliteDataTestFixture _fixture;
+    private readonly StargateContext _context;
+    private readonly PersonController _personController;
+    private readonly AstronautDutyController _astronautDutyController;
 
-    private readonly IServiceProvider _serviceProvider;
-    private readonly IMediator _mediator;
-
-    public SqliteDataTests()
+    public SqliteDataTests(SqliteDataTestFixture fixture)
     {
-        // create and open a connection in memory, persisting until the connection is disposed
-        _connection = new SqliteConnection("Filename=:memory:");
-        _connection.Open();
-
-        _contextOptions = new DbContextOptionsBuilder<StargateContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        using (var context = new StargateContext(_contextOptions))
-        {
-            context.Database.EnsureCreated();
-
-            context.People.RemoveRange(context.People);
-            context.SaveChanges();
-
-            context.AddRange(DbSeedData.GetFullData());
-            context.SaveChanges();    
-        }
-
-        var services = new ServiceCollection();
-        services.AddDbContext<StargateContext>(options =>
-            options.UseSqlite(_connection));
-        services.AddMediatR(cfg =>
-        {
-            cfg.RegisterServicesFromAssemblies(typeof(Program).Assembly);
-            cfg.AddRequestPreProcessor<CreatePersonPreProcessor>();
-            cfg.AddRequestPreProcessor<CreateAstronautDutyPreProcessor>();
-        });
-        _serviceProvider = services.BuildServiceProvider();
-        _mediator = _serviceProvider.GetRequiredService<IMediator>();
+        _fixture = fixture;
+        _context = _fixture.CreateContext();
+        _personController = _fixture.CreatePersonController();
+        _astronautDutyController = fixture.CreateAstronautDutyController();
+        DbInitializer.ReinitializeDbForTests(_context);
     }
-
-    StargateContext CreateContext() => new(_contextOptions);
 
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        _connection.Dispose();
+        _context.Dispose();
     }
 
     [Fact]
     public async Task Person_GetPeople_TestPersistedData()
     {
-        using var context = CreateContext();
-        var controller = new PersonController(_mediator);
-        var getPeopleResponse = await controller.GetPeople();
-        var entities = await context.People.ToListAsync();
+        var getPeopleResponse = await _personController.GetPeople();
+        var entities = await _context.People.ToListAsync();
 
         Assert.True(getPeopleResponse.Success);
         Assert.NotEmpty(entities);
@@ -82,12 +49,10 @@ public class SqliteDataTests : IntegrationTest, IDisposable
     [Fact]
     public async Task Person_GetPersonByName_TestPersistedData()
     {
-        using var context = CreateContext();
-        var controller = new PersonController(_mediator);
         var name = DbSeedData.Names.First();
 
-        var getPersonResponse = await controller.GetPersonByName(name);
-        var entity = await context.People.SingleAsync(p => p.Name == name);
+        var getPersonResponse = await _personController.GetPersonByName(name);
+        var entity = await _context.People.SingleAsync(p => p.Name == name);
 
         Assert.True(getPersonResponse.Success);
         Assert.NotNull(entity);
@@ -99,19 +64,11 @@ public class SqliteDataTests : IntegrationTest, IDisposable
     [Fact]
     public async Task Person_CreatePerson_TestPersistedData()
     {
-        using var context = CreateContext();
-        var controller = new PersonController(_mediator);
-        // rollback transaction at end of test, prevent interference with other test methods
-        context.Database.BeginTransaction();
-
         var name = DbInsertTestData.NewName;
 
-        var createPersonResponse = await controller.CreatePerson(name);
+        var createPersonResponse = await _personController.CreatePerson(name);
 
-        // clear the change tracker to simulate a commit of data to the target database
-        context.ChangeTracker.Clear();
-
-        var entity = context.People.Single(p => p.Name == name);
+        var entity = _context.People.Single(p => p.Name == name);
 
         Assert.True(createPersonResponse.Success);
         Assert.NotNull(entity);
@@ -124,12 +81,10 @@ public class SqliteDataTests : IntegrationTest, IDisposable
     [Fact]
     public async Task AstronautDuty_GetAstronautDutiesByName_TestPersistedData()
     {
-        using var context = CreateContext();
-        var controller = new AstronautDutyController(_mediator);
         var personWithDuty = DbSeedData.GetFullData().First(d => d.AstronautDuties.Count != 0);
 
-        var response = await controller.GetAstronautDutiesByName(personWithDuty.Name);
-        var entities = await context.AstronautDuties.AsNoTracking()
+        var response = await _astronautDutyController.GetAstronautDutiesByName(personWithDuty.Name);
+        var entities = await _context.AstronautDuties.AsNoTracking()
             .Include(d => d.Person)
             .Where(d => d.Person.Name == personWithDuty.Name).ToListAsync();
 
@@ -157,14 +112,12 @@ public class SqliteDataTests : IntegrationTest, IDisposable
     [Fact]
     public async Task AstronautDuty_CreateAstronautDuty_TestPersistedData()
     {
-        using var context = CreateContext();
-        var controller = new AstronautDutyController(_mediator);
         var name = DbSeedData.Names.First();
         var request = new CreateAstronautDuty(name, Rank: "Rank 1", DutyTitle: "Duty I", new DateTime(2023, 2, 1));
 
-        var createAstronautDutyResponse = await controller.CreateAstronautDuty(request);
+        var createAstronautDutyResponse = await _astronautDutyController.CreateAstronautDuty(request);
 
-        var entity = context.AstronautDuties.AsNoTracking()
+        var entity = _context.AstronautDuties.AsNoTracking()
             .Include(d => d.Person)
             .Single(d => d.Person.Name == name && d.DutyStartDate == request.DutyStartDate);
 
