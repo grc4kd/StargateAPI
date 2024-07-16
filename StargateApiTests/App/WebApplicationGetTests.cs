@@ -116,7 +116,19 @@ public class WebApplicationGetTests : IntegrationTest, IClassFixture<StargateWeb
         Assert.NotNull(result);
         Assert.True(result.Success);
         Assert.NotEmpty(result.AstronautDuties);
-        Assert.Null(result.AstronautDuties.First().Person);
+        Assert.Collection(result.AstronautDuties,
+            d =>
+            {
+                Assert.NotEqual(0, d.PersonId);
+                Assert.NotEmpty(d.Rank);
+                Assert.NotEmpty(d.DutyTitle);
+                Assert.InRange(d.DutyStartDate, DateTime.MinValue, DateTime.MaxValue);
+                if (d.DutyEndDate != null)
+                {
+                    Assert.IsType<DateTime>(d.DutyEndDate);
+                }
+            }
+        );
     }
 
     [Fact]

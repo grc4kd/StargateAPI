@@ -4,11 +4,13 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using StargateAPI.Business.Responses;
 using StargateAPI.Logging;
 
+using ILogger = Serilog.ILogger;
+
 namespace StargateAPI.Exceptions;
 
-public class HttpResponseExceptionFilter(Serilog.ILogger logger) : IActionFilter, IOrderedFilter
+public class HttpResponseExceptionFilter(ILogger logger) : IActionFilter, IOrderedFilter
 {
-    private readonly Serilog.ILogger _logger = logger;
+    private readonly ILogger _logger = logger;
 
     public int Order => int.MaxValue - 10;
 
@@ -16,9 +18,13 @@ public class HttpResponseExceptionFilter(Serilog.ILogger logger) : IActionFilter
 
     public void OnActionExecuted(ActionExecutedContext context)
     {
+        string method = context.HttpContext.Request.Method;
+        string requestUrl = context.HttpContext.Request.GetEncodedUrl();
+        string action = context.ActionDescriptor.DisplayName ?? string.Empty;
+
         if (context.Exception != null)
         {
-            _logger.FailedRequest(context.HttpContext.Request.Method, context.HttpContext.Request.GetEncodedUrl(), context.ActionDescriptor.DisplayName!);
+            _logger.FailedRequest(method, requestUrl, action);
 
             if (context.Exception is HttpResponseException httpResponseException)
             {
@@ -34,7 +40,7 @@ public class HttpResponseExceptionFilter(Serilog.ILogger logger) : IActionFilter
 
         if (context.Exception == null)
         {
-            _logger.SuccessfulRequest(context.HttpContext.Request.Method, context.HttpContext.Request.GetEncodedUrl(), context.ActionDescriptor.DisplayName!);
+            _logger.SuccessfulRequest(method, requestUrl, action);
         }
     }
 }
