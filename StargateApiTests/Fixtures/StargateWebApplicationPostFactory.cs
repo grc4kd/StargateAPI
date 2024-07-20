@@ -9,20 +9,19 @@ using StargateApiTests.Data;
 
 namespace StargateApiTests.Fixtures;
 
-public class StargateWebApplicationFactory<TProgram>
+public class StargateWebApplicationPostFactory<TProgram>
     : WebApplicationFactory<TProgram> where TProgram : class
 {
     private readonly DbConnection _connection;
     private readonly DbContextOptions<StargateContext> _contextOptions;
     private static readonly object _lock = new();
 
-    public StargateWebApplicationFactory()
+    public StargateWebApplicationPostFactory()
     {
         lock (_lock)
         {
             // Create open SqliteConnection so EF won't automatically close it.
-            //_connection = new SqliteConnection("Filename=StargateWebApplicationFactory.db");
-            _connection = new SqliteConnection("Filename=StargateWebApplicationFactory.test.db");
+            _connection = new SqliteConnection($"Filename={nameof(StargateWebApplicationPostFactory<StargateContext>)}.test.db");
             _connection.Open();
 
             _contextOptions = new DbContextOptionsBuilder<StargateContext>()

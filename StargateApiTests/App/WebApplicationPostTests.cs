@@ -10,12 +10,12 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace StargateApiTests.App;
 
 [Collection("WebApplicationTests")]
-public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWebApplicationFactory<Program>>, IDisposable
+public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWebApplicationPostFactory<Program>>, IDisposable
 {
     private readonly HttpClient _client;
-    private readonly StargateWebApplicationFactory<Program> _factory;
+    private readonly StargateWebApplicationPostFactory<Program> _factory;
 
-    public WebApplicationPostTests(StargateWebApplicationFactory<Program> factory)
+    public WebApplicationPostTests(StargateWebApplicationPostFactory<Program> factory)
     {
         _factory = factory;
         _client = factory.CreateClient(new WebApplicationFactoryClientOptions
@@ -24,10 +24,10 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
         });
     }
 
-    public void Dispose()
+    public async void Dispose()
     {
         GC.SuppressFinalize(this);
-        _factory.ReinitializeDbForTests();
+        await _factory.ReinitializeDbForTestsAsync();
     }
 
     #region Add/update a person by name
@@ -35,6 +35,8 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreatePerson_TestNewName()
     {
+        await _factory.ReinitializeDbForTestsAsync();
+
         var response = await _client.PostAsJsonAsync("/Person", DbInsertTestData.NewName);
 
         response.EnsureSuccessStatusCode();
@@ -48,6 +50,8 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreatePersonWithDuplicateName_ReturnsConflict()
     {
+        await _factory.ReinitializeDbForTestsAsync();
+
         var name = DbInsertTestData.NewName;
         var response = await _client.PostAsJsonAsync("/Person", name);
         var response2 = await _client.PostAsJsonAsync("/Person", name);
@@ -69,6 +73,8 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreateAstronautDuty_ReturnsOk()
     {
+        await _factory.ReinitializeDbForTestsAsync();
+
         var request = new CreateAstronautDuty
         (
             Name: "Yuri",
@@ -90,6 +96,8 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreateAstronautDutyForMissingPerson_ReturnsNotFound()
     {
+        await _factory.ReinitializeDbForTestsAsync();
+
         var personName = "test name, missing person";
         var dutyStartDate = new DateTime(1962, 6, 12);
 
@@ -115,6 +123,8 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreateAstronautDutyForNewAstronaut_CreatesNewAstronautDetail()
     {
+        await _factory.ReinitializeDbForTestsAsync();
+
         var request = new CreateAstronautDuty
         (
             Name: "James",
@@ -137,6 +147,8 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreateAstronautDutyForRetirement_UpdatesCareerEndDate()
     {
+        await _factory.ReinitializeDbForTestsAsync();
+
         var request = new CreateAstronautDuty
         (
             Name: "Yuri",
@@ -159,6 +171,8 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreateConsecutiveAstronautDuty_UpdatesPriorDutyAssignment()
     {
+        await _factory.ReinitializeDbForTestsAsync();
+
         var personName = "Yuri";
         var rank = "Lieutenant Colonel";
 
@@ -192,6 +206,8 @@ public class WebApplicationPostTests : IntegrationTest, IClassFixture<StargateWe
     [Fact]
     public async Task Post_CreateAstronautDutyWithSameStartDate_ReturnsConflict()
     {
+        await _factory.ReinitializeDbForTestsAsync();
+        
         var personName = "Yuri";
         var firstDutyStartDate = new DateTime(1962, 6, 12);
 

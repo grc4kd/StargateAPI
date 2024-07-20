@@ -26,7 +26,6 @@ public class WebApplicationGetTests : IntegrationTest, IClassFixture<StargateWeb
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        _factory.ReinitializeDbForTests();
     }
 
     [Theory]
